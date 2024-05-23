@@ -5,7 +5,7 @@
 ;   R16: Parameter Passing
 ;   R17-20: Local Scope (jangan dipake untuk simpen data permanen)
 ;   R25-R26: Ascii stuff serial monitor 
-;   R21: Menyimpan Data testing Gate 1
+;   R21: Menyimpan Data testing Gate 1 (all gate correct = 0x04)
 ;   R22: Menyimpan Data testing Gate 2
 ;   R23: Menyimpan Data testing Gate 3
 ;   R24: Menyimpan Data testing Gate 4
@@ -35,13 +35,37 @@
 ;     JMP interupt_2     ; External Interrupt Request 1
 ; ;------------------------
 
+;-------------------------
+; Variable
+
+  ; Port D
+  .equ G1I1, 5    ; Gate 1 Input 1
+  .equ G1I2, 6    ; Gate 1 Input 2
+  .equ G1O, 7     ; Gate 1 Output
+
+  ; Port B
+  .equ G2I1, 0    ; Gate 2 Input 1
+  .equ G2I2, 1    ; Gate 2 Input 2
+  .equ G2O, 2     ; Gate 2 Output
+
+  .equ G4I1, 3    ; Gate 4 Input 1
+  .equ G4I2, 4    ; Gate 4 Input 2
+  .equ G4O, 5     ; Gate 4 Output
+
+  ; Port C
+  .equ G3I1, 2    ; Gate 3 Input 1
+  .equ G3I2, 3    ; Gate 3 Input 2
+  .equ G3O, 4     ; Gate 3 Output
+;-------------------------
+
 .global start
 start:
-  RCALL serial_setup
-  RCALL io_setup
-  ; RCALL interrupt_setup ; pasrah interupt sementara pakai polling
+  CALL serial_setup
+  CALL io_setup
+  CALL ic_setup
+  ; CALL interrupt_setup ; pasrah interupt sementara pakai polling
   loop: 
-    RCALL delay_20ms
+    CALL delay_20ms
     SBI PORTD, 4 ; LED IC rusak
 
     cek_button:
@@ -49,8 +73,16 @@ start:
       RJMP loop ; jika button belum ditekan ulangi
 
     CBI PORTD, 4 ; LED IC rusak
-    LDI R16, 0x01
-    RCALL print_R16_Hex
+
+    ; LDI R16, 0x69
+    ; CALL print_R16_Hex
+    ; CALL print_newline
+
+    CALL check_or
+
+    ; LDI R16, 0x96
+    ; CALL print_R16_Hex
+    ; CALL print_newline
 
     RJMP loop
   
@@ -70,7 +102,37 @@ start:
       SBI PORTD, 3 ; pull-up resistor
 
       RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
+  ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  ; IC Setup
+  ; IC 2 input 1 output combo
+    ic_setup:
+      ; Gate 3 (A2, A3, A4)
+      CBI DDRC, G3I1
+      CBI PORTC, G3I1
+      SBI DDRC, G3I2
+      CBI PORTC, G3I2
+      SBI DDRC, G3O
 
+      ; Gate 4 (B3, B4, B5)
+      CBI DDRB, G4I1
+      CBI PORTB, G4I1
+      SBI DDRB, G4I2
+      CBI PORTB, G4I2
+      SBI DDRB, G4O
+
+      ; Gate 2 (B0, B1, B2)
+      CBI DDRB, G2I1
+      CBI PORTB, G2I1
+      SBI DDRB, G2I2
+      CBI PORTB, G2I2
+      SBI DDRB, G2O
+
+      ; Gate 1 (D5, D6, D7)
+      CBI DDRD, G1I1
+      CBI PORTD, G1I1
+      SBI DDRD, G1I2
+      CBI PORTD, G1I2
+      SBI DDRD, G1O
     
   ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ; Serial Setup
@@ -228,30 +290,499 @@ start:
 ;===============================================================================
 ; -- Check IC Functions --
   ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    ; Check IC 1
-      check_ic_1:
-        SBI PORTD, 5
-        LDI R21, 0x01
-        LDI R22, 0x02
-        LDI R23, 0x03
-        LDI R24, 0x04
-        RET
-    ; Check IC 2
-      check_ic_2:
-        SBI PORTB, 0
-        SBI PORTB, 1
-        SBI PORTB, 2
-        RET
-    ; Check IC 3
-      check_ic_3:
-        SBI PORTA, 2
-        SBI PORTA, 3
-        SBI PORTA, 4
-        RET
-    ; Check IC 4
-      check_ic_4:
-        SBI PORTB, 3
-        SBI PORTB, 4
-        SBI PORTB, 5
-        RET
+  ; Check OR
+    check_or:
+      CBI PORTD, 4          ; Matiin LED
+      CLR R21               ; Clear R21 (Gate 1 Data)
+      CLR R22               ; Clear R22 (Gate 2 Data)
+      CLR R23               ; Clear R23 (Gate 3 Data)
+      CLR R24               ; Clear R24 (Gate 4 Data)
+
+      OR_G1:
+        CALL ic_setup
+        
+        OR_G1_1:
+          CLR R17             ; Clear R17
+
+          CBI PORTD, G1I1     
+          CBI PORTD, G1I2    
+          CALL delay_20ms 
+          IN R17, PIND        ; Read Gate 1 Output
+          ANDI R17, 1<<G1O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G1O      ; Check if Gate 1 Output is 1
+          BRNE OR_G1_2       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R21, 0          ; set bit 0 to 1
+
+        OR_G1_2:
+          SBI PORTD, G1I1     
+          CBI PORTD, G1I2    
+          CALL delay_20ms 
+          IN R17, PIND        ; Read Gate 1 Output
+          ANDI R17, 1<<G1O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G1O      ; Check if Gate 1 Output is 1
+          BREQ OR_G1_3       ; (suposed to be 1) If 1, jump to next gate
+          SBR R21, 1          ; set bit 1 to 1
+
+        OR_G1_3:
+          CBI PORTD, G1I1     
+          SBI PORTD, G1I2    
+          CALL delay_20ms 
+          IN R17, PIND        ; Read Gate 1 Output
+          ANDI R17, 1<<G1O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G1O      ; Check if Gate 1 Output is 1
+          BREQ OR_G1_4       ; (suposed to be 1) If 1, jump to next gate
+          SBR R21, 2          ; set bit 2 to 1
+
+        OR_G1_4:
+          SBI PORTD, G1I1     
+          SBI PORTD, G1I2    
+          CALL delay_20ms 
+          IN R17, PIND        ; Read Gate 1 Output
+          ANDI R17, 1<<G1O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G1O      ; Check if Gate 1 Output is 1
+          BREQ OR_G2         ; (suposed to be 1) If 1, jump to next gate
+          SBR R21, 3          ; set bit 3 to 1
+      
+      OR_G2:
+        CALL ic_setup
+        
+        OR_G2_1:
+          CLR R17             ; Clear R17
+
+          CBI PORTB, G2I1     
+          CBI PORTB, G2I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G2O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G2O      ; Check if Gate 1 Output is 1
+          BRNE OR_G2_2       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R22, 0          ; set bit 0 to 1
+
+        OR_G2_2:
+          SBI PORTB, G2I1     
+          CBI PORTB, G2I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G2O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G2O      ; Check if Gate 1 Output is 1
+          BREQ OR_G2_3       ; (suposed to be 1) If 1, jump to next gate
+          SBR R22, 1          ; set bit 1 to 1
+
+        OR_G2_3:
+          CBI PORTB, G2I1     
+          SBI PORTB, G2I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G2O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G2O      ; Check if Gate 1 Output is 1
+          BREQ OR_G2_4       ; (suposed to be 1) If 1, jump to next gate
+          SBR R22, 2          ; set bit 2 to 1
+
+        OR_G2_4:
+          SBI PORTB, G2I1     
+          SBI PORTB, G2I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G2O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G2O      ; Check if Gate 1 Output is 1
+          BREQ OR_G3         ; (suposed to be 1) If 1, jump to next gate
+          SBR R22, 3          ; set bit 3 to 1
+
+      OR_G3:
+        CALL ic_setup
+        
+        OR_G3_1:
+          CLR R17             ; Clear R17
+
+          CBI PORTC, G3I1     
+          CBI PORTC, G3I2    
+          CALL delay_20ms 
+          IN R17, PINC        ; Read Gate 1 Output
+          ANDI R17, 1<<G3O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G3O      ; Check if Gate 1 Output is 1
+          BRNE OR_G3_2       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R23, 0          ; set bit 0 to 1
+
+        OR_G3_2:
+          SBI PORTC, G3I1     
+          CBI PORTC, G3I2    
+          CALL delay_20ms 
+          IN R17, PINC        ; Read Gate 1 Output
+          ANDI R17, 1<<G3O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G3O      ; Check if Gate 1 Output is 1
+          BREQ OR_G3_3       ; (suposed to be 1) If 1, jump to next gate
+          SBR R23, 1          ; set bit 1 to 1
+
+        OR_G3_3:
+          CBI PORTC, G3I1     
+          SBI PORTC, G3I2    
+          CALL delay_20ms 
+          IN R17, PINC        ; Read Gate 1 Output
+          ANDI R17, 1<<G3O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G3O      ; Check if Gate 1 Output is 1
+          BREQ OR_G3_4       ; (suposed to be 1) If 1, jump to next gate
+          SBR R23, 2          ; set bit 2 to 1
+
+        OR_G3_4:
+          SBI PORTC, G3I1     
+          SBI PORTC, G3I2    
+          CALL delay_20ms 
+          IN R17, PINC        ; Read Gate 1 Output
+          ANDI R17, 1<<G3O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G3O      ; Check if Gate 1 Output is 1
+          BREQ OR_G4         ; (suposed to be 1) If 1, jump to next gate
+          SBR R23, 3          ; set bit 3 to 1
+
+      OR_G4:
+        CALL ic_setup
+        
+        OR_G4_1:
+          CLR R17             ; Clear R17
+
+          CBI PORTB, G4I1     
+          CBI PORTB, G4I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G4O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G4O      ; Check if Gate 1 Output is 1
+          BRNE OR_G4_2       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R24, 0          ; set bit 0 to 1
+
+        OR_G4_2:
+          SBI PORTB, G4I1     
+          CBI PORTB, G4I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G4O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G4O      ; Check if Gate 1 Output is 1
+          BREQ OR_G4_3       ; (suposed to be 1) If 1, jump to next gate
+          SBR R24, 1          ; set bit 1 to 1
+
+        OR_G4_3:
+          CBI PORTB, G4I1     
+          SBI PORTB, G4I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G4O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G4O      ; Check if Gate 1 Output is 1
+          BREQ OR_G4_4       ; (suposed to be 1) If 1, jump to next gate
+          SBR R24, 2          ; set bit 2 to 1
+
+        OR_G4_4:
+          SBI PORTB, G4I1     
+          SBI PORTB, G4I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G4O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G4O      ; Check if Gate 1 Output is 1
+          BREQ OR_END         ; (suposed to be 1) If 1, jump to next gate
+          SBR R24, 3          ; set bit 3 to 1
+
+      OR_END:
+        ADD R21, R22        ; Add Gate 1 and Gate 2
+        ADD R21, R23        ; Add Gate 1, 2 and 3
+        ADD R21, R24        ; Add Gate 1, 2, 3 and 4
+        CPI R21, 0x00       ; Check if all gate is correct (gate = 0)
+        BRNE OR_INCORRECT  ; If not 0, jump to incorrect
+        SBI PORTD, 4
+
+        OR_INCORRECT:
+        RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
+      
   ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  ; Check AND
+      check_and:
+      CBI PORTD, 4          ; Matiin LED
+      CLR R21               ; Clear R21 (Gate 1 Data)
+      CLR R22               ; Clear R22 (Gate 2 Data)
+      CLR R23               ; Clear R23 (Gate 3 Data)
+      CLR R24               ; Clear R24 (Gate 4 Data)
+
+      AND_G1:
+        CALL ic_setup
+        
+        AND_G1_1:
+          CLR R17             ; Clear R17
+
+          CBI PORTD, G1I1     
+          CBI PORTD, G1I2    
+          CALL delay_20ms 
+          IN R17, PIND        ; Read Gate 1 Output
+          ANDI R17, 1<<G1O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G1O      ; Check if Gate 1 Output is 1
+          BRNE AND_G1_2       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R21, 0          ; set bit 0 to 1
+
+        AND_G1_2:
+          SBI PORTD, G1I1     
+          CBI PORTD, G1I2    
+          CALL delay_20ms 
+          IN R17, PIND        ; Read Gate 1 Output
+          ANDI R17, 1<<G1O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G1O      ; Check if Gate 1 Output is 1
+          BRNE AND_G1_3       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R21, 1          ; set bit 1 to 1
+
+        AND_G1_3:
+          CBI PORTD, G1I1     
+          SBI PORTD, G1I2    
+          CALL delay_20ms 
+          IN R17, PIND        ; Read Gate 1 Output
+          ANDI R17, 1<<G1O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G1O      ; Check if Gate 1 Output is 1
+          BRNE AND_G1_4       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R21, 2          ; set bit 2 to 1
+
+        AND_G1_4:
+          SBI PORTD, G1I1     
+          SBI PORTD, G1I2    
+          CALL delay_20ms 
+          IN R17, PIND        ; Read Gate 1 Output
+          ANDI R17, 1<<G1O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G1O      ; Check if Gate 1 Output is 1
+          BREQ AND_G2         ; (suposed to be 1) If 1, jump to next gate
+          SBR R21, 3          ; set bit 3 to 1
+      
+      AND_G2:
+        CALL ic_setup
+        
+        AND_G2_1:
+          CLR R17             ; Clear R17
+
+          CBI PORTB, G2I1     
+          CBI PORTB, G2I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G2O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G2O      ; Check if Gate 1 Output is 1
+          BRNE AND_G2_2       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R22, 0          ; set bit 0 to 1
+
+        AND_G2_2:
+          SBI PORTB, G2I1     
+          CBI PORTB, G2I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G2O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G2O      ; Check if Gate 1 Output is 1
+          BRNE AND_G2_3       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R22, 1          ; set bit 1 to 1
+
+        AND_G2_3:
+          CBI PORTB, G2I1     
+          SBI PORTB, G2I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G2O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G2O      ; Check if Gate 1 Output is 1
+          BRNE AND_G2_4       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R22, 2          ; set bit 2 to 1
+
+        AND_G2_4:
+          SBI PORTB, G2I1     
+          SBI PORTB, G2I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G2O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G2O      ; Check if Gate 1 Output is 1
+          BREQ AND_G3         ; (suposed to be 1) If 1, jump to next gate
+          SBR R22, 3          ; set bit 3 to 1
+
+      AND_G3:
+        CALL ic_setup
+        
+        AND_G3_1:
+          CLR R17             ; Clear R17
+
+          CBI PORTC, G3I1     
+          CBI PORTC, G3I2    
+          CALL delay_20ms 
+          IN R17, PINC        ; Read Gate 1 Output
+          ANDI R17, 1<<G3O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G3O      ; Check if Gate 1 Output is 1
+          BRNE AND_G3_2       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R23, 0          ; set bit 0 to 1
+
+        AND_G3_2:
+          SBI PORTC, G3I1     
+          CBI PORTC, G3I2    
+          CALL delay_20ms 
+          IN R17, PINC        ; Read Gate 1 Output
+          ANDI R17, 1<<G3O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G3O     ; Check if Gate 1 Output is 1
+          BRNE AND_G3_3       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R23, 1          ; set bit 1 to 1
+
+        AND_G3_3:
+          CBI PORTC, G3I1     
+          SBI PORTC, G3I2    
+          CALL delay_20ms 
+          IN R17, PINC        ; Read Gate 1 Output
+          ANDI R17, 1<<G3O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G3O      ; Check if Gate 1 Output is 1
+          BRNE AND_G3_4       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R23, 2          ; set bit 2 to 1
+
+        AND_G3_4:
+          SBI PORTC, G3I1     
+          SBI PORTC, G3I2    
+          CALL delay_20ms 
+          IN R17, PINC        ; Read Gate 1 Output
+          ANDI R17, 1<<G3O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G3O      ; Check if Gate 1 Output is 1
+          BREQ AND_G4         ; (suposed to be 1) If 1, jump to next gate
+          SBR R23, 3          ; set bit 3 to 1
+
+      AND_G4:
+        CALL ic_setup
+        
+        AND_G4_1:
+          CLR R17             ; Clear R17
+
+          CBI PORTB, G4I1     
+          CBI PORTB, G4I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G4O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G4O      ; Check if Gate 1 Output is 1
+          BRNE AND_G4_2       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R24, 0          ; set bit 0 to 1
+
+        AND_G4_2:
+          SBI PORTB, G4I1     
+          CBI PORTB, G4I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G4O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G4O     ; Check if Gate 1 Output is 1
+          BRNE AND_G4_3       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R24, 1          ; set bit 1 to 1
+
+        AND_G4_3:
+          CBI PORTB, G4I1     
+          SBI PORTB, G4I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G4O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G4O     ; Check if Gate 1 Output is 1
+          BRNE AND_G4_4       ; (suposed to be 0) If not 1, jump to next gate
+          SBR R24, 2          ; set bit 2 to 1
+
+        AND_G4_4:
+          SBI PORTB, G4I1     
+          SBI PORTB, G4I2    
+          CALL delay_20ms 
+          IN R17, PINB        ; Read Gate 1 Output
+          ANDI R17, 1<<G4O    ; Mask Gate 1 Output
+          MOV R16, R17        ; Store Gate 1 Output to R16
+          CALL print_R16_Hex  ; Print Gate 1 Output
+          CALL print_newline  ; Print New Line
+          CPI R17, 1<<G4O      ; Check if Gate 1 Output is 1
+          BREQ AND_END         ; (suposed to be 1) If 1, jump to next gate
+          SBR R24, 3          ; set bit 3 to 1
+
+      AND_END:
+        ADD R21, R22        ; Add Gate 1 and Gate 2
+        ADD R21, R23        ; Add Gate 1, 2 and 3
+        ADD R21, R24        ; Add Gate 1, 2, 3 and 4
+        CPI R21, 0x00       ; Check if all gate is correct (gate = 0)
+        BRNE AND_INCORRECT  ; If not 0, jump to incorrect
+        SBI PORTD, 4
+
+        AND_INCORRECT:
+        RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
+
+;===============================================================================
