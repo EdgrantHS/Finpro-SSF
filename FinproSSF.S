@@ -253,7 +253,7 @@ start:
     ;---------------------------------------------------------------------
     A_F_LSD:
       ADD R16, R26 ; add 7 to byte to get ASCII chars A to F
-      RJMP print_l3\
+      RJMP print_l3
   ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ; Function print New Line
     print_newline:
