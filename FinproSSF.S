@@ -5,7 +5,7 @@
 ;   R16: Parameter Passing
 ;   R17-20: Local Scope (jangan dipake untuk simpen data permanen)
 ;   R25-R26: Ascii stuff serial monitor 
-;   R21: Menyimpan Data testing Gate 1 (all gate correct = 0x04)
+;   R21: Menyimpan Data testing Gate 1 (all gate correct = 0x04)z
 ;   R22: Menyimpan Data testing Gate 2
 ;   R23: Menyimpan Data testing Gate 3
 ;   R24: Menyimpan Data testing Gate 4
@@ -14,8 +14,8 @@
 ; Pin
 ;   D3 Button Interupt 1 (cycle)
 ;   D2 Button Interupt 2 (confirm)
-;   A0, A1 I2C LCD
-;   A2-4 (Check Gate 3)
+;   A4, A5 I2C LCD
+;   A0-2 (Check Gate 3)
 ;   B3-5 (Check Gate 4)
 ;   B0-2 (Check Gate 2)
 ;   D5-7 (Check Gate 1)
@@ -53,9 +53,9 @@
   .equ G4O, 5     ; Gate 4 Output
 
   ; Port C
-  .equ G3I1, 2    ; Gate 3 Input 1
-  .equ G3I2, 3    ; Gate 3 Input 2
-  .equ G3O, 4     ; Gate 3 Output
+  .equ G3I1, 0    ; Gate 3 Input 1
+  .equ G3I2, 1    ; Gate 3 Input 2
+  .equ G3O, 2     ; Gate 3 Output
 ;-------------------------
 
 .global start
@@ -74,9 +74,9 @@ start:
 
     CBI PORTD, 4 ; LED IC rusak
 
-    ; LDI R16, 0x69
-    ; CALL print_R16_Hex
-    ; CALL print_newline
+    LDI R16, 0x69
+    CALL print_R16_Hex
+    CALL print_newline
 
     CALL check_or
 
@@ -107,32 +107,33 @@ start:
   ; IC 2 input 1 output combo
     ic_setup:
       ; Gate 3 (A2, A3, A4)
-      CBI DDRC, G3I1
+      SBI DDRC, G3I1
       CBI PORTC, G3I1
       SBI DDRC, G3I2
       CBI PORTC, G3I2
       SBI DDRC, G3O
 
       ; Gate 4 (B3, B4, B5)
-      CBI DDRB, G4I1
+      SBI DDRB, G4I1
       CBI PORTB, G4I1
       SBI DDRB, G4I2
       CBI PORTB, G4I2
       SBI DDRB, G4O
 
       ; Gate 2 (B0, B1, B2)
-      CBI DDRB, G2I1
+      SBI DDRB, G2I1
       CBI PORTB, G2I1
       SBI DDRB, G2I2
       CBI PORTB, G2I2
       SBI DDRB, G2O
 
       ; Gate 1 (D5, D6, D7)
-      CBI DDRD, G1I1
+      SBI DDRD, G1I1
       CBI PORTD, G1I1
       SBI DDRD, G1I2
       CBI PORTD, G1I2
       SBI DDRD, G1O
+      RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
     
   ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ; Serial Setup
@@ -286,6 +287,89 @@ start:
     ;     RCALL print_newline
     ;     RET
 ;===============================================================================
+
+;===============================================================================
+; -- LCD Functions --
+  ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  I2C_init:
+      LDI R21, 0
+      STS TWSR, R21 ; prescaler = 0
+      LDI R21, 12 ; division factor = 12
+      STS TWBR, R21 ; SCK freq = 400kHz
+      LDI R21, (1<<TWEN)
+      STS TWCR, R21 ; enable TWI
+      RET
+
+  ;==============================================================
+
+  LCD_init:
+      RCALL I2C_start
+      LDI R27, (0x3E<<1)
+      RCALL I2C_write
+      LDI R27, 0x00 ; Control byte: Co = 0, RS = 0
+      RCALL I2C_write
+      
+      LDI R27, 0x38 ; Function set: 8-bit, 2 line, 5x7 dots
+      RCALL I2C_write
+      RCALL LCD_delay
+      
+      LDI R27, 0x0C ; Display on, cursor off, blink off
+      RCALL I2C_write
+      RCALL LCD_delay
+      
+      LDI R27, 0x01 ; Clear display
+      RCALL I2C_write
+      RCALL LCD_delay
+      
+      LDI R27, 0x06 ; Entry mode set: increment automatically, no shift
+      RCALL I2C_write
+      RCALL LCD_delay
+
+      RCALL I2C_stop
+      RET
+
+  ;==============================================================
+
+  LCD_delay:
+      LDI R20, 255
+  d1: LDI R21, 255
+  d2: DEC R21
+      BRNE d2
+      DEC R20
+      BRNE d1
+      RET
+
+  ;==============================================================
+
+  I2C_start:
+      LDI R21, (1<<TWINT)|(1<<TWSTA)|(1<<TWEN)
+      STS TWCR, R21 ; transmit START condition
+  wt1:
+      LDS R21, TWCR
+      SBRS R21, TWINT ; TWI interrupt = 1?
+      RJMP wt1 ; wait for end of transmission
+      RET
+
+  ;==============================================================
+
+  I2C_write:
+      STS TWDR, R27 ; copy SLA+W into data register
+      LDI R21, (1<<TWINT)|(1<<TWEN)
+      STS TWCR, R21 ; transmit SLA+W
+  wt2:
+      LDS R21, TWCR
+      SBRS R21, TWINT
+      RJMP wt2 ; wait for end of transmission
+      RET
+
+  ;==============================================================
+
+  I2C_stop:
+      LDI R21, (1<<TWINT)|(1<<TWSTO)|(1<<TWEN)
+      STS TWCR, R21 ; transmit STOP condition
+      RET
+;===============================================================================
+
 
 ;===============================================================================
 ; -- Check IC Functions --
