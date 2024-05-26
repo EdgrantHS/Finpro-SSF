@@ -9,7 +9,7 @@
 ;   R22: Menyimpan Data testing Gate 2
 ;   R23: Menyimpan Data testing Gate 3
 ;   R24: Menyimpan Data testing Gate 4
-;   R27: check OR (32) atau AND(8)
+;   R27: I2C
 ;------------------------
 ; Pin
 ;   D3 Button Interupt 1 (cycle)
@@ -66,23 +66,14 @@ start:
   ; CALL interrupt_setup ; pasrah interupt sementara pakai polling
   loop: 
     CALL delay_20ms
-    CBI PORTD, 4 ; LED IC rusak
-
+    CBI PORTD, 4
     cek_button:
       SBIC PIND, 2    ; cek button confirm
-      RJMP loop ; jika button belum ditekan ulangi
+      RJMP loop 
 
     CBI PORTD, 4 ; LED IC rusak
 
-    ; LDI R16, 0x69
-    ; CALL print_R16_Hex
-    ; CALL print_newline
-
     CALL check_or
-
-    ; LDI R16, 0x96
-    ; CALL print_R16_Hex
-    ; CALL print_newline
 
     RJMP loop
   
@@ -167,6 +158,12 @@ start:
 
     ;   RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
   ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  ; I2C Setup
+    CBI DDRC, 4 ; pin PC4 (SDA) is input
+    CBI DDRC, 5 ; pin PC5 (SCL) is input
+
+    RCALL I2C_init ; initialize TWI module
+    RCALL LCD_init ; initialize LCD
 ;===============================================================================
 
 ; ===============================================================================
@@ -545,7 +542,6 @@ start:
         CALL print_R16_Hex  ; Print Gate 4 Output
         CALL print_newline  ; Print New Line
 
-
         ADD R21, R22        ; Add Gate 1 and Gate 2
         ADD R21, R23        ; Add Gate 1, 2 and 3
         ADD R21, R24        ; Add Gate 1, 2, 3 and 4
@@ -557,7 +553,8 @@ start:
         CPI R21, 0xF8      ; Check if Gate 1, 2, 3 and 4 is 0x36
         BRNE OR_INCORRECT  ; If not 0, jump to incorrect
         SBI PORTD, 4
-
+        RCALL print_or     ; Print OR pada I2C
+        
         OR_INCORRECT:
         RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
       
@@ -809,4 +806,90 @@ start:
         AND_INCORRECT:
         RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
 
+;===============================================================================
+  ; I2C Print
+  ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ; OR:
+    print_or:
+      RCALL I2C_start ; transmit START condition
+      LDI R27, (0x3E<<1) ; SLA+W (LCD_ADDRESS << 1) + W(0)
+      RCALL I2C_write ; write slave address SLA+W
+      LDI R27, 0x00 ; Control byte: Co = 0, RS = 0 (instruction register)
+      RCALL I2C_write ; write control byte
+      LDI R27, 0x80 ; Set DDRAM address to 0 (first line, first position)
+      RCALL I2C_write ; write DDRAM address command
+      
+      RCALL I2C_start ; repeat START condition
+      LDI R27, (0x3E<<1) ; SLA+W again
+      RCALL I2C_write ; write slave address SLA+W
+      LDI R27, 0x40 ; Control byte: Co = 0, RS = 1 (data register)
+      RCALL I2C_write ; write control byte
+
+      LDI R27, 'I'
+      RCALL I2C_write
+      RCALL LCD_delay
+
+      LDI R27, 'C'
+      RCALL I2C_write
+      RCALL LCD_delay
+
+      LDI R27, ' '
+      RCALL I2C_write
+      RCALL LCD_delay
+
+      LDI R27, 'O'
+      RCALL I2C_write
+      RCALL LCD_delay
+
+      LDI R27, 'R'
+      RCALL I2C_write
+      RCALL LCD_delay
+      
+      RCALL I2C_stop ; transmit STOP condition
+
+      RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
+  ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ; AND:
+    print_and:
+      RCALL I2C_start ; transmit START condition
+      LDI R27, (0x3E<<1) ; SLA+W (LCD_ADDRESS << 1) + W(0)
+      RCALL I2C_write ; write slave address SLA+W
+      LDI R27, 0x00 ; Control byte: Co = 0, RS = 0 (instruction register)
+      RCALL I2C_write ; write control byte
+      LDI R27, 0x80 ; Set DDRAM address to 0 (first line, first position)
+      RCALL I2C_write ; write DDRAM address command
+      
+      RCALL I2C_start ; repeat START condition
+      LDI R27, (0x3E<<1) ; SLA+W again
+      RCALL I2C_write ; write slave address SLA+W
+      LDI R27, 0x40 ; Control byte: Co = 0, RS = 1 (data register)
+      RCALL I2C_write ; write control byte
+
+      LDI R27, 'I'
+      RCALL I2C_write
+      RCALL LCD_delay
+
+      LDI R27, 'C'
+      RCALL I2C_write
+      RCALL LCD_delay
+
+      LDI R27, ' '
+      RCALL I2C_write
+      RCALL LCD_delay
+
+      LDI R27, 'A'
+      RCALL I2C_write
+      RCALL LCD_delay
+
+      LDI R27, 'N'
+      RCALL I2C_write
+      RCALL LCD_delay
+
+      LDI R27, 'D'
+      RCALL I2C_write
+      RCALL LCD_delay
+      
+      RCALL I2C_stop ; transmit STOP condition
+
+      RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
 ;===============================================================================
