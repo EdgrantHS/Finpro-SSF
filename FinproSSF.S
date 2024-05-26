@@ -66,7 +66,7 @@ start:
   ; CALL interrupt_setup ; pasrah interupt sementara pakai polling
   loop: 
     CALL delay_20ms
-    SBI PORTD, 4 ; LED IC rusak
+    CBI PORTD, 4 ; LED IC rusak
 
     cek_button:
       SBIC PIND, 2    ; cek button confirm
@@ -74,9 +74,9 @@ start:
 
     CBI PORTD, 4 ; LED IC rusak
 
-    LDI R16, 0x69
-    CALL print_R16_Hex
-    CALL print_newline
+    ; LDI R16, 0x69
+    ; CALL print_R16_Hex
+    ; CALL print_newline
 
     CALL check_or
 
@@ -115,24 +115,24 @@ start:
 
       ; Gate 4 (B3, B4, B5)
       SBI DDRB, G4I1
-      CBI PORTB, G4I1
+      ; CBI PORTB, G4I1
       SBI DDRB, G4I2
-      CBI PORTB, G4I2
-      SBI DDRB, G4O
+      ; CBI PORTB, G4I2
+      CBI DDRB, G4O
 
       ; Gate 2 (B0, B1, B2)
       SBI DDRB, G2I1
-      CBI PORTB, G2I1
+      ; CBI PORTB, G2I1
       SBI DDRB, G2I2
-      CBI PORTB, G2I2
-      SBI DDRB, G2O
+      ; CBI PORTB, G2I2
+      CBI DDRB, G2O
 
       ; Gate 1 (D5, D6, D7)
       SBI DDRD, G1I1
-      CBI PORTD, G1I1
+      ; CBI PORTD, G1I1
       SBI DDRD, G1I2
-      CBI PORTD, G1I2
-      SBI DDRD, G1O
+      ; CBI PORTD, G1I2
+      CBI DDRD, G1O
       RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
     
   ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -388,7 +388,7 @@ start:
         OR_G1_1:
           CLR R17             ; Clear R17
 
-          CALL delay_2s
+          CALL delay_20ms
           CBI PORTD, G1I1     
           CBI PORTD, G1I2    
           CALL delay_20ms 
@@ -554,7 +554,7 @@ start:
         CALL print_R16_Hex  ; Print Gate 1, 2, 3 and 4
         CALL print_newline  ; Print New Line
 
-        CPI R21, 0x36      ; Check if Gate 1, 2, 3 and 4 is 0x36
+        CPI R21, 0xF8      ; Check if Gate 1, 2, 3 and 4 is 0x36
         BRNE OR_INCORRECT  ; If not 0, jump to incorrect
         SBI PORTD, 4
 
