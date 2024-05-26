@@ -107,11 +107,11 @@ start:
   ; IC 2 input 1 output combo
     ic_setup:
       ; Gate 3 (A2, A3, A4)
-      SBI DDRC, G3I1
-      CBI PORTC, G3I1
-      SBI DDRC, G3I2
-      CBI PORTC, G3I2
-      SBI DDRC, G3O
+      SBI DDRC, G3I1  ; Set Gate 3 Input 1 as output
+      ; CBI PORTC, G3I1
+      SBI DDRC, G3I2  ; Set Gate 3 Input 2 as output
+      ; CBI PORTC, G3I  2
+      CBI DDRC, G3O 
 
       ; Gate 4 (B3, B4, B5)
       SBI DDRB, G4I1
@@ -388,17 +388,13 @@ start:
         OR_G1_1:
           CLR R17             ; Clear R17
 
+          CALL delay_2s
           CBI PORTD, G1I1     
           CBI PORTD, G1I2    
           CALL delay_20ms 
           IN R17, PIND        ; Read Gate 1 Output
           ANDI R17, 1<<G1O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G1O      ; Check if Gate 1 Output is 1
-          BRNE OR_G1_2       ; (suposed to be 0) If not 1, jump to next gate
-          SBR R21, 0          ; set bit 0 to 1
+          ADD R21, R17
 
         OR_G1_2:
           SBI PORTD, G1I1     
@@ -406,12 +402,7 @@ start:
           CALL delay_20ms 
           IN R17, PIND        ; Read Gate 1 Output
           ANDI R17, 1<<G1O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G1O      ; Check if Gate 1 Output is 1
-          BREQ OR_G1_3       ; (suposed to be 1) If 1, jump to next gate
-          SBR R21, 1          ; set bit 1 to 1
+          ADD R21, R17
 
         OR_G1_3:
           CBI PORTD, G1I1     
@@ -419,12 +410,7 @@ start:
           CALL delay_20ms 
           IN R17, PIND        ; Read Gate 1 Output
           ANDI R17, 1<<G1O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G1O      ; Check if Gate 1 Output is 1
-          BREQ OR_G1_4       ; (suposed to be 1) If 1, jump to next gate
-          SBR R21, 2          ; set bit 2 to 1
+          ADD R21, R17
 
         OR_G1_4:
           SBI PORTD, G1I1     
@@ -432,12 +418,7 @@ start:
           CALL delay_20ms 
           IN R17, PIND        ; Read Gate 1 Output
           ANDI R17, 1<<G1O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G1O      ; Check if Gate 1 Output is 1
-          BREQ OR_G2         ; (suposed to be 1) If 1, jump to next gate
-          SBR R21, 3          ; set bit 3 to 1
+          ADD R21, R17
       
       OR_G2:
         CALL ic_setup
@@ -450,12 +431,7 @@ start:
           CALL delay_20ms 
           IN R17, PINB        ; Read Gate 1 Output
           ANDI R17, 1<<G2O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G2O      ; Check if Gate 1 Output is 1
-          BRNE OR_G2_2       ; (suposed to be 0) If not 1, jump to next gate
-          SBR R22, 0          ; set bit 0 to 1
+          ADD R22, R17
 
         OR_G2_2:
           SBI PORTB, G2I1     
@@ -463,12 +439,7 @@ start:
           CALL delay_20ms 
           IN R17, PINB        ; Read Gate 1 Output
           ANDI R17, 1<<G2O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G2O      ; Check if Gate 1 Output is 1
-          BREQ OR_G2_3       ; (suposed to be 1) If 1, jump to next gate
-          SBR R22, 1          ; set bit 1 to 1
+          ADD R22, R17
 
         OR_G2_3:
           CBI PORTB, G2I1     
@@ -476,12 +447,7 @@ start:
           CALL delay_20ms 
           IN R17, PINB        ; Read Gate 1 Output
           ANDI R17, 1<<G2O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G2O      ; Check if Gate 1 Output is 1
-          BREQ OR_G2_4       ; (suposed to be 1) If 1, jump to next gate
-          SBR R22, 2          ; set bit 2 to 1
+          ADD R22, R17
 
         OR_G2_4:
           SBI PORTB, G2I1     
@@ -489,12 +455,7 @@ start:
           CALL delay_20ms 
           IN R17, PINB        ; Read Gate 1 Output
           ANDI R17, 1<<G2O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G2O      ; Check if Gate 1 Output is 1
-          BREQ OR_G3         ; (suposed to be 1) If 1, jump to next gate
-          SBR R22, 3          ; set bit 3 to 1
+          ADD R22, R17
 
       OR_G3:
         CALL ic_setup
@@ -507,12 +468,7 @@ start:
           CALL delay_20ms 
           IN R17, PINC        ; Read Gate 1 Output
           ANDI R17, 1<<G3O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G3O      ; Check if Gate 1 Output is 1
-          BRNE OR_G3_2       ; (suposed to be 0) If not 1, jump to next gate
-          SBR R23, 0          ; set bit 0 to 1
+          ADD R23, R17
 
         OR_G3_2:
           SBI PORTC, G3I1     
@@ -520,12 +476,7 @@ start:
           CALL delay_20ms 
           IN R17, PINC        ; Read Gate 1 Output
           ANDI R17, 1<<G3O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G3O      ; Check if Gate 1 Output is 1
-          BREQ OR_G3_3       ; (suposed to be 1) If 1, jump to next gate
-          SBR R23, 1          ; set bit 1 to 1
+          ADD R23, R17
 
         OR_G3_3:
           CBI PORTC, G3I1     
@@ -533,12 +484,7 @@ start:
           CALL delay_20ms 
           IN R17, PINC        ; Read Gate 1 Output
           ANDI R17, 1<<G3O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G3O      ; Check if Gate 1 Output is 1
-          BREQ OR_G3_4       ; (suposed to be 1) If 1, jump to next gate
-          SBR R23, 2          ; set bit 2 to 1
+          ADD R23, R17
 
         OR_G3_4:
           SBI PORTC, G3I1     
@@ -546,12 +492,7 @@ start:
           CALL delay_20ms 
           IN R17, PINC        ; Read Gate 1 Output
           ANDI R17, 1<<G3O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G3O      ; Check if Gate 1 Output is 1
-          BREQ OR_G4         ; (suposed to be 1) If 1, jump to next gate
-          SBR R23, 3          ; set bit 3 to 1
+          ADD R23, R17
 
       OR_G4:
         CALL ic_setup
@@ -564,12 +505,7 @@ start:
           CALL delay_20ms 
           IN R17, PINB        ; Read Gate 1 Output
           ANDI R17, 1<<G4O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G4O      ; Check if Gate 1 Output is 1
-          BRNE OR_G4_2       ; (suposed to be 0) If not 1, jump to next gate
-          SBR R24, 0          ; set bit 0 to 1
+          ADD R24, R17
 
         OR_G4_2:
           SBI PORTB, G4I1     
@@ -577,12 +513,7 @@ start:
           CALL delay_20ms 
           IN R17, PINB        ; Read Gate 1 Output
           ANDI R17, 1<<G4O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G4O      ; Check if Gate 1 Output is 1
-          BREQ OR_G4_3       ; (suposed to be 1) If 1, jump to next gate
-          SBR R24, 1          ; set bit 1 to 1
+          ADD R24, R17
 
         OR_G4_3:
           CBI PORTB, G4I1     
@@ -590,12 +521,7 @@ start:
           CALL delay_20ms 
           IN R17, PINB        ; Read Gate 1 Output
           ANDI R17, 1<<G4O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G4O      ; Check if Gate 1 Output is 1
-          BREQ OR_G4_4       ; (suposed to be 1) If 1, jump to next gate
-          SBR R24, 2          ; set bit 2 to 1
+          ADD R24, R17
 
         OR_G4_4:
           SBI PORTB, G4I1     
@@ -603,18 +529,32 @@ start:
           CALL delay_20ms 
           IN R17, PINB        ; Read Gate 1 Output
           ANDI R17, 1<<G4O    ; Mask Gate 1 Output
-          MOV R16, R17        ; Store Gate 1 Output to R16
-          CALL print_R16_Hex  ; Print Gate 1 Output
-          CALL print_newline  ; Print New Line
-          CPI R17, 1<<G4O      ; Check if Gate 1 Output is 1
-          BREQ OR_END         ; (suposed to be 1) If 1, jump to next gate
-          SBR R24, 3          ; set bit 3 to 1
+          ADD R24, R17
 
       OR_END:
+        MOV R16, R21        ; Store Gate 1 Output to R16
+        CALL print_R16_Hex  ; Print Gate 1 Output
+        CALL print_newline  ; Print New Line
+        MOV R16, R22        ; Store Gate 2 Output to R16
+        CALL print_R16_Hex  ; Print Gate 2 Output
+        CALL print_newline  ; Print New Line
+        MOV R16, R23        ; Store Gate 3 Output to R16
+        CALL print_R16_Hex  ; Print Gate 3 Output
+        CALL print_newline  ; Print New Line
+        MOV R16, R24        ; Store Gate 4 Output to R16
+        CALL print_R16_Hex  ; Print Gate 4 Output
+        CALL print_newline  ; Print New Line
+
+
         ADD R21, R22        ; Add Gate 1 and Gate 2
         ADD R21, R23        ; Add Gate 1, 2 and 3
         ADD R21, R24        ; Add Gate 1, 2, 3 and 4
-        CPI R21, 0x00       ; Check if all gate is correct (gate = 0)
+
+        MOV R16, R21        ; Store Gate 1, 2, 3 and 4 to R16
+        CALL print_R16_Hex  ; Print Gate 1, 2, 3 and 4
+        CALL print_newline  ; Print New Line
+
+        CPI R21, 0x36      ; Check if Gate 1, 2, 3 and 4 is 0x36
         BRNE OR_INCORRECT  ; If not 0, jump to incorrect
         SBI PORTD, 4
 
