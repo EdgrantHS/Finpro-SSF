@@ -1,3 +1,5 @@
 Backup Of FinproSSF.pdsbak
 Last Loaded FinproSSF.pdsbak
-FinproSSF.pdsprj.LAPTOP-D7QV6AFB.USER
+*.workspace
+.gitignore
+.vscode

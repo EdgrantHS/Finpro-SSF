@@ -65,13 +65,8 @@ start:
   CALL ic_setup
   ; CALL interrupt_setup ; pasrah interupt sementara pakai polling
   loop: 
-    CALL delay_20ms
+    CALL delay_2s
     CBI PORTD, 4      ; Matiin LED
-
-    cek_button_and:
-      SBIC PIND, 3    ; cek button and
-      RJMP loop
-      CALL check_and
 
     RJMP loop
   
@@ -560,6 +555,7 @@ start:
   
   ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ; Check AND
+    .global check_and
     check_and:
       CBI PORTD, 4          ; Matiin LED
       CLR R21               ; Clear R21 (Gate 1 Data)
