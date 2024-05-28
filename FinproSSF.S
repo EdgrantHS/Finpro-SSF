@@ -367,6 +367,7 @@ start:
     .global check_or
     check_or:
       CBI PORTD, 4          ; Matiin LED
+      CALL print_clr        ; Clear LCD
       CLR R21               ; Clear R21 (Gate 1 Data)
       CLR R22               ; Clear R22 (Gate 2 Data)
       CLR R23               ; Clear R23 (Gate 3 Data)
@@ -557,6 +558,7 @@ start:
     .global check_and
     check_and:
       CBI PORTD, 4          ; Matiin LED
+      CALL print_clr        ; Clear LCD
       CLR R21               ; Clear R21 (Gate 1 Data)
       CLR R22               ; Clear R22 (Gate 2 Data)
       CLR R23               ; Clear R23 (Gate 3 Data)
@@ -826,6 +828,50 @@ start:
       CALL I2C_write
       CALL LCD_delay
 
+      CALL I2C_stop ; transmit STOP condition
+
+      RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
+  ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ; clr:
+    print_clr:
+      CALL I2C_start ; transmit START condition
+      LDI R27, (0x3E<<1) ; SLA+W (LCD_ADDRESS << 1) + W(0)
+      CALL I2C_write ; write slave address SLA+W
+      LDI R27, 0x00 ; Control byte: Co = 0, RS = 0 (instruction register)
+      CALL I2C_write ; write control byte
+      LDI R27, 0x80 ; Set DDRAM address to 0 (first line, first position)
+      CALL I2C_write ; write DDRAM address command
+
+      CALL I2C_start ; repeat START condition
+      LDI R27, (0x3E<<1) ; SLA+W again
+      CALL I2C_write ; write slave address SLA+W
+      LDI R27, 0x40 ; Control byte: Co = 0, RS = 1 (data register)
+      CALL I2C_write ; write control byte
+
+      LDI R27, ' '
+      CALL I2C_write
+      CALL LCD_delay
+
+      LDI R27, ' '
+      CALL I2C_write
+      CALL LCD_delay
+
+      LDI R27, ' '
+      CALL I2C_write
+      CALL LCD_delay
+
+      LDI R27, ' '
+      CALL I2C_write
+      CALL LCD_delay
+
+      LDI R27, ' '
+      CALL I2C_write
+      CALL LCD_delay
+
+      LDI R27, ' '
+      CALL I2C_write
+      CALL LCD_delay
+      
       CALL I2C_stop ; transmit STOP condition
 
       RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
