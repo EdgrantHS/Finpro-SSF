@@ -66,7 +66,6 @@ start:
   ; CALL interrupt_setup ; pasrah interupt sementara pakai polling
   loop: 
     CALL delay_2s
-    CBI PORTD, 4      ; Matiin LED
 
     RJMP loop
   
