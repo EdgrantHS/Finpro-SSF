@@ -63,7 +63,6 @@ start:
   CALL serial_setup
   CALL io_setup
   CALL ic_setup
-  ; CALL interrupt_setup ; pasrah interupt sementara pakai polling
   loop: 
     CALL delay_2s
 
@@ -134,21 +133,6 @@ start:
       LDI R25, 48 ; constants used to get ASCII values
       LDI R26, 7 ; for chars 0-->9 & A-->F
       RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
-  ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  ; ; Interrupt Setup
-    ; interrupt_setup:
-    ;   ; Configure INT0 to trigger on falling edge
-    ;   LDI R17, 0b00001010
-    ;   STS EICRA, R17
-
-    ;   ; Enable INT0 and INT1
-    ;   LDI R17, 0b00000011 
-    ;   STS EIMSK, R17
-
-    ;   ; Enable global interrupts
-    ;   SEI
-
-    ;   RET ; !!!!!!!!!!!!!RETURN!!!!!!!!!!!!!!
   ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ; I2C Setup
     CBI DDRC, 4 ; pin PC4 (SDA) is input
