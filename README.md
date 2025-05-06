@@ -3,8 +3,6 @@
 
 Edgrant Henderson Suryajaya - 2206025016  
 Fairuz Muhammad - 2206814324  
-Dimas Dandossi Wicaksono - 2206059780  
-Fadlihajjan Carel Agfata - 2206826822  
 
 ---
 
